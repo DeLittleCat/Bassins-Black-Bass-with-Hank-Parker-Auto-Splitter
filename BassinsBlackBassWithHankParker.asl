@@ -5,7 +5,6 @@ state("higan") {}
 state("emuhawk") {}
 
 init {
-	vars.lakeNumber = 0;
 	vars.resultsSeen = false;
 	var states = new Dictionary<int, long> {
 		{ 9646080,   0x97EE04 },      // Snes9x-rr 1.60
@@ -52,35 +51,26 @@ init {
 	}
 
 	vars.watchers = new MemoryWatcherList {
-		new MemoryWatcher<byte>((IntPtr)memoryOffset + 0x08D1) { Name = "tileType" },
-		new MemoryWatcher<byte>((IntPtr)memoryOffset + 0x11D3) { Name = "place" },
-		new MemoryWatcher<byte>((IntPtr)memoryOffset + 0x10185) { Name = "activeScreen" },
+		new MemoryWatcher<byte>((IntPtr)memoryOffset + 0x008D1) { Name = "tileType" },
+		new MemoryWatcher<byte>((IntPtr)memoryOffset + 0x011D3) { Name = "place" },
+		new MemoryWatcher<byte>((IntPtr)memoryOffset + 0x10185) { Name = "paletteOverlay" },
+		new MemoryWatcher<byte>((IntPtr)memoryOffset + 0x01130) { Name = "stageNumber" },
 	};
 }
 
 start {
-	return vars.watchers["tileType"].Current == 3 && vars.watchers["tileType"].Old != 3;
+	return vars.watchers["tileType"].Current == 0x03;
 }
 
 update {
 	vars.watchers.UpdateAll(game);
+	vars.resultsSeen = vars.resultsSeen && vars.watchers["paletteOverlay"].Current == 4;
 }
 
 split {
-	if (vars.watchers["activeScreen"].Current == vars.watchers["place"].Current && vars.watchers["tileType"].Current != 0 && !vars.resultsSeen) {  // First frame on results screen(colored) with console reset protection
-		if (vars.lakeNumber == 3) {
-			if (vars.watchers["place"].Current == 0x00) {
-				vars.resultsSeen = true;
-				return true;
-			}
-		}
-		else if (vars.watchers["place"].Current < 0x03) {
-			vars.resultsSeen = true;
-			vars.lakeNumber += 1;
-			return true;
-		}
+	if (vars.watchers["paletteOverlay"].Current == 0x04 && vars.watchers["place"].Current < 0x03 && vars.watchers["tileType"].Current != 0x00 && !vars.resultsSeen) {  // Loaded results screen while in 3rd or better place
+		vars.resultsSeen = true;
+		return vars.watchers["stageNumber"].Current != 3 || vars.watchers["place"].Current == 0x00;
 	}
-	else if (vars.resultsSeen && vars.watchers["activeScreen"].Current != vars.watchers["place"].Current){  // First frame off results screen
-		vars.resultsSeen = false;
-	}
+	return vars.watchers["tileType"].Current == 0x00 && vars.watchers["stageNumber"].Current > vars.watchers["stageNumber"].Old && vars.watchers["stageNumber"].Current != 3; // For Lake Skip Glitch
 }
