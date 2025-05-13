@@ -72,5 +72,5 @@ split {
 		vars.resultsSeen = true;
 		return vars.watchers["stageNumber"].Current != 3 || vars.watchers["place"].Current == 0x00;
 	}
-	return vars.watchers["tileType"].Current == 0x00 && vars.watchers["stageNumber"].Current > vars.watchers["stageNumber"].Old && vars.watchers["stageNumber"].Current != 3; // For Lake Skip Glitch
+	return vars.watchers["tileType"].Current == 0x00 && vars.watchers["stageNumber"].Current > vars.watchers["stageNumber"].Old && vars.watchers["stageNumber"].Old != 3; // For Lake Skip Glitch
 }
