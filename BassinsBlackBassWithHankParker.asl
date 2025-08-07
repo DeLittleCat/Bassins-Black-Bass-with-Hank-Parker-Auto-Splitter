@@ -6,6 +6,8 @@ state("emuhawk") {}
 
 init {
 	vars.resultsSeen = false;
+	vars.willSplit = false;
+	vars.lake = 0;
 	var states = new Dictionary<int, long> {
 		{ 9646080,   0x97EE04 },      // Snes9x-rr 1.60
         	{ 13565952,  0x140925118 },   // Snes9x-rr 1.60 (x64)
@@ -59,18 +61,22 @@ init {
 }
 
 start {
+	vars.resultsSeen = false;
+	vars.willSplit = false;
+	vars.lake = 0;
 	return vars.watchers["tileType"].Current == 0x03;
 }
 
 update {
 	vars.watchers.UpdateAll(game);
+	vars.willSplit = false;
 	vars.resultsSeen = vars.resultsSeen && vars.watchers["paletteOverlay"].Current == 4;
+	if (vars.watchers["paletteOverlay"].Current == 0x04 && vars.watchers["place"].Current < 0x03 && vars.watchers["tileType"].Current != 0x00 && !vars.resultsSeen){
+		vars.resultsSeen = true;
+		vars.willSplit = vars.watchers["stageNumber"].Current != 3 || vars.watchers["place"].Current == 0x00;
+	}
+	else if (vars.watchers["stageNumber"].Current > vars.lake){ vars.willSplit = true; }
+	if (vars.willSplit){ vars.lake += 1; }
 }
 
-split {
-	if (vars.watchers["paletteOverlay"].Current == 0x04 && vars.watchers["place"].Current < 0x03 && vars.watchers["tileType"].Current != 0x00 && !vars.resultsSeen) {  // Loaded results screen while in 3rd or better place
-		vars.resultsSeen = true;
-		return vars.watchers["stageNumber"].Current != 3 || vars.watchers["place"].Current == 0x00;
-	}
-	return vars.watchers["tileType"].Current == 0x00 && vars.watchers["stageNumber"].Current > vars.watchers["stageNumber"].Old && vars.watchers["stageNumber"].Old != 3; // For Lake Skip Glitch
-}
+split { return vars.willSplit; }
