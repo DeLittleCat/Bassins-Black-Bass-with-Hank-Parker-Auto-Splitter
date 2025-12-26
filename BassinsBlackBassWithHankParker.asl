@@ -8,8 +8,9 @@ init {
 	vars.resultsSeen = false;
 	vars.willSplit = false;
 	vars.lake = 0;
+	vars.isJP = false;
 	var states = new Dictionary<int, long> {
-		{ 9646080,   0x97EE04 },      // Snes9x-rr 1.60
+			{ 9646080,   0x97EE04 },      // Snes9x-rr 1.60
         	{ 13565952,  0x140925118 },   // Snes9x-rr 1.60 (x64)
         	{ 9027584,   0x94DB54 },      // Snes9x 1.60
         	{ 12836864,  0x1408D8BE8 },   // Snes9x 1.60 (x64)
@@ -36,27 +37,21 @@ init {
 	if (states.TryGetValue(modules.First().ModuleMemorySize, out memoryOffset)) {
 		var procName = memory.ProcessName.ToLower();
 		if (procName.Contains("snes9x")) {
-			if (procName.Contains("x64")) {
-				memoryOffset = memory.ReadValue<long>((IntPtr)memoryOffset);
-			}
-			else {
-				memoryOffset = memory.ReadValue<int>((IntPtr)memoryOffset);
-			}
+			if (procName.Contains("x64")) { memoryOffset = memory.ReadValue<long>((IntPtr)memoryOffset); }
+			else { memoryOffset = memory.ReadValue<int>((IntPtr)memoryOffset); }
 		}
 	}
 
-	if (memoryOffset == 0) {
-		throw new Exception("Memory not yet initialized.");
-	}
-	else {
-		print("[Autosplitter] Memory address: " + memoryOffset.ToString("X8"));
-	}
+	if (memoryOffset == 0) { throw new Exception("Memory not yet initialized."); }
+	else { print("[Autosplitter] Memory address: " + memoryOffset.ToString("X8")); }
 
 	vars.watchers = new MemoryWatcherList {
 		new MemoryWatcher<byte>((IntPtr)memoryOffset + 0x008D1) { Name = "tileType" },
+		new MemoryWatcher<byte>((IntPtr)memoryOffset + 0x010A4) { Name = "stageNumberJP" },
+		new MemoryWatcher<byte>((IntPtr)memoryOffset + 0x01130) { Name = "stageNumber" },
+		new MemoryWatcher<byte>((IntPtr)memoryOffset + 0x01147) { Name = "placeJP" },
 		new MemoryWatcher<byte>((IntPtr)memoryOffset + 0x011D3) { Name = "place" },
 		new MemoryWatcher<byte>((IntPtr)memoryOffset + 0x10185) { Name = "paletteOverlay" },
-		new MemoryWatcher<byte>((IntPtr)memoryOffset + 0x01130) { Name = "stageNumber" },
 	};
 }
 
@@ -64,19 +59,29 @@ start {
 	vars.resultsSeen = false;
 	vars.willSplit = false;
 	vars.lake = 0;
-	return vars.watchers["tileType"].Current == 0x03;
+	vars.isJP = vars.watchers["placeJP"].Current == 49;
+	return vars.watchers["tileType"].Current == 3;
 }
 
 update {
 	vars.watchers.UpdateAll(game);
 	vars.willSplit = false;
 	vars.resultsSeen = vars.resultsSeen && vars.watchers["paletteOverlay"].Current == 4;
-	if (vars.watchers["paletteOverlay"].Current == 0x04 && vars.watchers["place"].Current < 0x03 && vars.watchers["tileType"].Current != 0x00 && !vars.resultsSeen){
-		vars.resultsSeen = true;
-		vars.willSplit = vars.watchers["stageNumber"].Current != 3 || vars.watchers["place"].Current == 0x00;
+	if (vars.isJP) {
+		if (vars.watchers["paletteOverlay"].Current == 4 && vars.watchers["placeJP"].Current < 3 && vars.watchers["tileType"].Current != 0 && !vars.resultsSeen) {
+			vars.resultsSeen = true;
+			vars.willSplit = vars.watchers["stageNumberJP"].Current != 3 || vars.watchers["placeJP"].Current == 0;
+		}
+		if (vars.watchers["stageNumberJP"].Current > vars.lake) { vars.willSplit = true; }
 	}
-	else if (vars.watchers["stageNumber"].Current > vars.lake){ vars.willSplit = true; }
-	if (vars.willSplit){ vars.lake += 1; }
+	else {
+		if (vars.watchers["paletteOverlay"].Current == 4 && vars.watchers["place"].Current < 3 && vars.watchers["tileType"].Current != 0 && !vars.resultsSeen) {
+			vars.resultsSeen = true;
+			vars.willSplit = vars.watchers["stageNumber"].Current != 3 || vars.watchers["place"].Current == 0;
+		}
+		if (vars.watchers["stageNumber"].Current > vars.lake) { vars.willSplit = true; }
+	}
+	if (vars.willSplit) { vars.lake += 1; }
 }
 
 split { return vars.willSplit; }
