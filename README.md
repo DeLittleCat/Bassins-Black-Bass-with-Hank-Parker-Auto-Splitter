@@ -1,6 +1,6 @@
 # Bassin's Black Bass with Hank Parker - Auto Splitter
 
-This is an auto splitter for **Bassin's Black Bass with Hank Parker** (SNES), compatible with various versions of Snes9x, Snes9x-rr, bsnes, higan, and BizHawk. You can use this for Any% or Any% Glitched in the US(but not JP) release.
+This is an auto splitter for **Bassin's Black Bass with Hank Parker** (SNES), compatible with various versions of Snes9x, Snes9x-rr, bsnes, higan, and BizHawk. You can use this for Any% No Major Glitches or Any% on the United States or Japanese release.
 
 ## Setup Instructions
 1. Download the zip or just the asl file
@@ -10,4 +10,4 @@ This is an auto splitter for **Bassin's Black Bass with Hank Parker** (SNES), co
 5. Double Click **Scriptable Auto Splitter**
 6. **Browse...** to your folder and select the asl file
 7. If start and split aren't checked, check them
-8. Hit **Ok** and you should be good
+8. Hit **Ok** and you should be ready for all of the mentioned categories
